@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Grade 9: Report Text Interactive Learning</title>
+    <!-- Tailwind CSS CDN (dengan fallback CSS mandiri di bawah agar tetap rapi meski offline di APK) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fallback & Custom Styling Mandiri (Siap Offline di APK WebView) */
+        :root {
+            --primary: #1d4ed8;
+            --primary-dark: #1e3a8a;
+            --bg-main: #f1f5f9;
+            --text-main: #0f172a;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Animasi Karakter SVG & Layar Alarm */
+        @keyframes bounceSlow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+        @keyframes waveHand {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(22deg); }
+            75% { transform: rotate(-16deg); }
+        }
+        @keyframes pulseAlarm {
+            0%, 100% { background-color: #dc2626; }
+            50% { background-color: #7f1d1d; }
+        }
+        @keyframes floatTrophy {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-9px) scale(1.06); }
+        }
+        @keyframes pulseFlame {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        .animate-bounce-slow {
+            animation: bounceSlow 2s infinite ease-in-out;
+        }
+        .animate-wave {
+            transform-origin: 70% 70%;
+            animation: waveHand 1.1s infinite ease-in-out;
+        }
+        .animate-trophy {
+            animation: floatTrophy 2s infinite ease-in-out;
+        }
+        .animate-flame {
+            transform-origin: center bottom;
+            animation: pulseFlame 1s infinite ease-in-out;
+        }
+        .alarm-screen {
+            animation: pulseAlarm 0.75s infinite ease-in-out;
+        }
+
+        /* Canvas Konfeti */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased bg-slate-100 text-slate-900">
+
+    <!-- Canvas Efek Konfeti -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Notifikasi Toast (Pengganti alert) -->
+    <div id="toast-box" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 hidden transition-all duration-300 w-11/12 max-w-md">
+        <div class="bg-amber-600 text-white px-5 py-3.5 rounded-2xl shadow-xl font-semibold flex items-center gap-3 border border-amber-400">
+            <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <span id="toast-message" class="text-sm">Pesan peringatan</span>
+        </div>
+    </div>
+
+    <!-- HEADER STICKY -->
+    <header class="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-700 text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/15 p-2.5 rounded-xl border border-white/20">
+                    <svg class="w-7 h-7 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                </div>
+                <div>
+                    <span class="text-[11px] font-bold uppercase tracking-widest text-blue-200 block">Bahasa Inggris SMP Kelas 9</span>
+                    <h1 class="text-base sm:text-xl font-extrabold tracking-tight">Report Text Mastery</h1>
+                </div>
+            </div>
+
+            <!-- Info Siswa & Timer (Muncul saat Kuis Aktif) -->
+            <div id="active-exam-bar" class="hidden items-center gap-2 sm:gap-3">
+                <div class="hidden md:flex flex-col text-right pr-2 border-r border-blue-400/30">
+                    <span id="header-student-name" class="text-xs font-bold text-white truncate max-w-[140px]">Nama Siswa</span>
+                    <span id="header-student-class" class="text-[11px] text-blue-200 font-medium">Kelas IX</span>
+                </div>
+                <div class="flex items-center gap-2 bg-rose-600 border border-rose-300/50 px-3.5 py-2 rounded-xl shadow-md">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-xs font-medium text-rose-100 hidden sm:inline">Waktu:</span>
+                    <span id="timer-display" class="font-mono text-base sm:text-lg font-extrabold tracking-wider">20:00</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- KONTEN UTAMA -->
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-6 sm:py-8">
+
+        <!-- ========================================================= -->
+        <!-- BAGIAN 1: MATERI LENGKAP & FORM IDENTITAS SISWA           -->
+        <!-- ========================================================= -->
+        <section id="intro-section" class="space-y-6">
+
+            <!-- Modul 1: Identify and Understand Report Texts -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-7">
+                <div class="flex flex-wrap items-center gap-2.5 mb-4 pb-3 border-b border-slate-100">
+                    <span class="bg-blue-600 text-white font-extrabold px-3 py-1 rounded-lg text-xs">KOMPETENSI 1</span>
+                    <h2 class="text-lg sm:text-xl font-extrabold text-slate-800">Identify and Understand Report Texts</h2>
+                </div>
+
+                <div class="space-y-4 text-sm text-slate-700 leading-relaxed">
+                    <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-4">
+                        <h3 class="font-bold text-blue-900 mb-1">A. Definition & Social Function (Definisi & Tujuan Sosial)</h3>
+                        <p>
+                            <strong>Report Text</strong> adalah jenis teks dalam bahasa Inggris yang menyajikan informasi faktual mengenai suatu objek (hewan, tumbuhan, fenomena alam, benda teknologi, atau gejala sosial) secara <strong>umum (general)</strong> berdasarkan hasil observasi atau penelitian ilmiah.
+                        </p>
+                        <p class="mt-1.5 text-blue-950 font-medium">
+                            🎯 <em>Social Function:</em> To describe the way things are in general, with reference to a range of natural, man-made, and social phenomena in our environment.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Generic Structure -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                            <h3 class="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                                B. Generic Structure (Struktur Teks)
+                            </h3>
+                            <ul class="space-y-2 text-xs sm:text-sm">
+                                <li class="bg-white p-2.5 rounded-lg border border-slate-200">
+                                    <strong class="text-indigo-700 block">1. General Classification (Klasifikasi Umum)</strong>
+                                    Berisi pernyataan umum yang memperkenalkan objek yang dibahas, definisi ilmiah, atau klasifikasi kelompoknya.
+                                </li>
+                                <li class="bg-white p-2.5 rounded-lg border border-slate-200">
+                                    <strong class="text-indigo-700 block">2. Description (Deskripsi Fakta)</strong>
+                                    Menjelaskan bagian-bagian tubuh/komponen, ciri fisik, habitat, perilaku, kebiasaan, atau fungsi objek secara rinci dan objektif.
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Language Features -->
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                            <h3 class="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                                C. Language Features (Ciri Kebahasaan)
+                            </h3>
+                            <ul class="space-y-1.5 text-xs sm:text-sm list-disc list-inside text-slate-700">
+                                <li><strong>General Nouns:</strong> Kata benda umum (e.g., <em>Mangrove trees, Komodo dragons, Earthquakes</em>), bukan spesifik (<em>My cat</em>).</li>
+                                <li><strong>Simple Present Tense:</strong> Menyatakan fakta ilmiah/kebenaran umum (e.g., <em>They live in coastal areas</em>).</li>
+                                <li><strong>Relating Verbs:</strong> Kata kerja penghubung (<em>is, am, are, have, belong to, consist of</em>).</li>
+                                <li><strong>Technical / Scientific Terms:</strong> Istilah ilmiah (e.g., <em>ecosystem, reptile, photosynthesis, habitat</em>).</li>
+                                <li><strong>Passive Voice:</strong> Menekankan objek fakta (e.g., <em>Mangroves are found in tropical coasts</em>).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modul 2: Write Report Text + Contoh Teks Beranotasi -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-7">
+                <div class="flex flex-wrap items-center gap-2.5 mb-4 pb-3 border-b border-slate-100">
+                    <span class="bg-emerald-600 text-white font-extrabold px-3 py-1 rounded-lg text-xs">KOMPETENSI 2</span>
+                    <h2 class="text-lg sm:text-xl font-extrabold text-slate-800">Write Report Text (Langkah & Contoh Teks)</h2>
+                </div>
+
+                <!-- 4 Langkah Menulis Report Text -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                    <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5">
+                        <span class="text-xs font-black text-emerald-700 block mb-1">STEP 1</span>
+                        <h4 class="font-bold text-slate-800 text-sm mb-1">Tentukan Topik Umum</h4>
+                        <p class="text-xs text-slate-600">Pilih objek umum (bukan milik pribadi), misal: <em>Mangrove Forest</em>.</p>
+                    </div>
+                    <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5">
+                        <span class="text-xs font-black text-emerald-700 block mb-1">STEP 2</span>
+                        <h4 class="font-bold text-slate-800 text-sm mb-1">Riset Fakta Objektif</h4>
+                        <p class="text-xs text-slate-600">Kumpulkan data ilmiah (habitat, ciri fisik, manfaat) tanpa opini pribadi.</p>
+                    </div>
+                    <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5">
+                        <span class="text-xs font-black text-emerald-700 block mb-1">STEP 3</span>
+                        <h4 class="font-bold text-slate-800 text-sm mb-1">Susun Kerangka Teks</h4>
+                        <p class="text-xs text-slate-600">Paragraf 1: <em>General Classification</em>. Paragraf 2+: <em>Description</em>.</p>
+                    </div>
+                    <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5">
+                        <span class="text-xs font-black text-emerald-700 block mb-1">STEP 4</span>
+                        <h4 class="font-bold text-slate-800 text-sm mb-1">Sunting Tata Bahasa</h4>
+                        <p class="text-xs text-slate-600">Pastikan memakai <em>Simple Present Tense</em>, <em>Passive Voice</em>, dan istilah tepat.</p>
+                    </div>
+                </div>
+
+                <!-- Contoh Utuh Report Text dengan Anotasi -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Contoh Report Text Beranotasi</span>
+                        <span class="text-xs bg-indigo-100 text-indigo-800 font-bold px-2.5 py-0.5 rounded-full">Model Text</span>
+                    </div>
+                    <h3 class="text-lg font-extrabold text-slate-900 mb-3 text-center">Mangrove Forests</h3>
+
+                    <div class="space-y-3 text-sm leading-relaxed">
+                        <!-- Paragraf 1: General Classification -->
+                        <div class="bg-white border-l-4 border-blue-600 p-3.5 rounded-r-xl shadow-xs">
+                            <span class="inline-block text-[11px] font-extrabold uppercase bg-blue-100 text-blue-800 px-2 py-0.5 rounded mb-1.5">
+                                General Classification (Klasifikasi & Definisi Umum)
+                            </span>
+                            <p class="text-slate-800">
+                                <strong>Mangrove forests</strong> <span class="underline decoration-blue-400">are</span> coastal wetland ecosystems that <span class="underline decoration-blue-400">grow</span> in tropical and subtropical regions. They <span class="underline decoration-emerald-500 font-medium">are characterized</span> by salt-tolerant trees and shrubs that thrive in intertidal zones where freshwater meets saltwater.
+                            </p>
+                        </div>
+
+                        <!-- Paragraf 2: Description -->
+                        <div class="bg-white border-l-4 border-emerald-600 p-3.5 rounded-r-xl shadow-xs">
+                            <span class="inline-block text-[11px] font-extrabold uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded mb-1.5">
+                                Description (Ciri Fisik, Fungsi Ekologis & Fakta Ilmiah)
+                            </span>
+                            <p class="text-slate-800">
+                                Mangrove trees <span class="underline decoration-blue-400">possess</span> complex, tangled prop roots that stabilize coastlines and prevent erosion from waves and storms. In addition, dense mangrove roots <span class="underline decoration-emerald-500 font-medium">are used</span> as nursery habitats by various species of fish, crabs, and shrimp. Today, mangrove conservation programs <span class="underline decoration-emerald-500 font-medium">are promoted</span> globally because these forests absorb large amounts of carbon dioxide.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modul 3: Form Identitas & Mulai Kuis -->
+            <div class="bg-white rounded-2xl shadow-md border-2 border-blue-200 p-5 sm:p-7">
+                <h2 class="text-xl font-extrabold text-slate-900 mb-1">Identitas Peserta Kuis Evaluasi</h2>
+                <p class="text-sm text-slate-500 mb-5">Lengkapi Nama dan Kelas Anda di bawah ini untuk membuka 5 soal PG HOTS berstimulus.</p>
+
+                <!-- Kotak Peringatan Anti-Cheat -->
+                <div class="bg-rose-50 border-l-4 border-rose-600 p-4 rounded-r-xl mb-6">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <div class="text-xs sm:text-sm text-rose-950 space-y-1">
+                            <p class="font-extrabold text-rose-700">PERATURAN UJIAN & SISTEM ANTI-CURANG:</p>
+                            <ul class="list-disc list-inside space-y-0.5 text-rose-900">
+                                <li>Durasi pengerjaan adalah <strong>20 menit</strong> (hitung mundur otomatis).</li>
+                                <li><strong>DILARANG berpindah tab browser, membuka aplikasi lain, atau meminimalkan layar</strong> selama ujian berlangsung.</li>
+                                <li>Jika Anda beralih tab/keluar layar, sistem otomatis mengubah layar menjadi <strong>MERAH</strong>, membunyikan <strong>ALARM KERAS</strong>, dan menyatakan ujian <strong>GAGAL / DISKUALIFIKASI</strong>.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="start-form" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="student-name" class="block text-sm font-bold text-slate-700 mb-1.5">Nama Lengkap Siswa <span class="text-rose-600">*</span></label>
+                            <input type="text" id="student-name" placeholder="Masukkan nama lengkap..." required
+                                class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition text-slate-900 bg-slate-50 focus:bg-white font-medium">
+                        </div>
+                        <div>
+                            <label for="student-class" class="block text-sm font-bold text-slate-700 mb-1.5">Kelas <span class="text-rose-600">*</span></label>
+                            <input type="text" id="student-class" placeholder="Contoh: IX-A / 9B" required
+                                class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition text-slate-900 bg-slate-50 focus:bg-white font-medium">
+                        </div>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full mt-2 bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white font-extrabold py-4 px-6 rounded-xl shadow-lg shadow-blue-200 transition transform active:scale-[0.99] flex items-center justify-center gap-2 text-base cursor-pointer">
+                        <span>Mulai Kuis Evaluasi (20 Menit)</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- BAGIAN 2: HALAMAN SOAL KUIS (5 SOAL PG HOTS BERSTIMULUS)   -->
+        <!-- ========================================================= -->
+        <section id="quiz-section" class="hidden space-y-6">
+            <!-- Banner Status Peserta -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 px-5 py-3.5 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-800 font-extrabold flex items-center justify-center text-base" id="avatar-initials">
+                        S
+                    </div>
+                    <div>
+                        <p class="text-sm font-extrabold text-slate-900" id="display-name">Nama Siswa</p>
+                        <p class="text-xs text-slate-500">Kelas: <span id="display-class" class="font-bold text-blue-700">IX</span></p>
+                    </div>
+                </div>
+                <div class="text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
+                    Pengawas Tab Aktif
+                </div>
+            </div>
+
+            <!-- Kontainer 5 Soal HOTS -->
+            <div id="questions-container" class="space-y-6"></div>
+
+            <!-- Tombol Submit Jawaban -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-sm text-slate-600 text-center sm:text-left">
+                    Periksa kembali seluruh <strong>5 soal HOTS</strong> sebelum mengumpulkan jawaban.
+                </p>
+                <button type="button" id="submit-quiz-btn"
+                    class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3.5 px-8 rounded-xl shadow-md shadow-emerald-200 transition transform active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span>Selesai & Lihat Nilai</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- BAGIAN 3: HALAMAN HASIL & UMPAN BALIK ANIMASI             -->
+        <!-- ========================================================= -->
+        <section id="result-section" class="hidden space-y-6">
+            <div class="bg-white rounded-3xl shadow-xl border border-slate-200 p-6 sm:p-10 text-center relative overflow-hidden">
+                
+                <!-- Ilustrasi Karakter Animasi SVG -->
+                <div id="result-animation-box" class="mx-auto w-44 h-44 mb-4 flex items-center justify-center"></div>
+
+                <!-- Badge Status -->
+                <div id="result-badge" class="inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wider mb-3">
+                    STATUS
+                </div>
+
+                <!-- Judul Besar Hasil -->
+                <h2 id="result-title" class="text-2xl sm:text-4xl font-black mb-2 tracking-tight">
+                    HASIL EVALUASI
+                </h2>
+
+                <!-- Identitas Siswa -->
+                <p class="text-slate-600 text-sm sm:text-base mb-6">
+                    Peserta: <strong id="res-name" class="text-slate-900">Nama</strong> &bull; Kelas: <strong id="res-class" class="text-blue-700">Kelas</strong>
+                </p>
+
+                <!-- Kotak Skor Akhir -->
+                <div class="max-w-xs mx-auto bg-slate-50 border-2 border-slate-200 rounded-2xl p-5 mb-6">
+                    <span class="text-xs font-extrabold uppercase tracking-widest text-slate-400 block mb-1">Skor Akhir</span>
+                    <div class="text-5xl sm:text-6xl font-black" id="res-score">100</div>
+                    <p class="text-xs font-medium text-slate-500 mt-2" id="res-detail">Benar 5 dari 5 soal</p>
+                </div>
+
+                <!-- Pesan Motivasi -->
+                <p id="result-message" class="max-w-lg mx-auto text-slate-700 text-sm sm:text-base leading-relaxed mb-8"></p>
+
+                <!-- Tombol Coba Lagi -->
+                <button type="button" onclick="resetApplication()"
+                    class="bg-blue-700 hover:bg-blue-800 text-white font-extrabold py-3.5 px-8 rounded-xl shadow-lg shadow-blue-200 transition transform active:scale-95 inline-flex items-center gap-2 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    <span>Coba Lagi / Kembali ke Materi</span>
+                </button>
+            </div>
+
+            <!-- Rincian Pembahasan Soal -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-7">
+                <h3 class="text-lg font-extrabold text-slate-800 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    Pembahasan Jawaban (5 Soal HOTS)
+                </h3>
+                <div id="review-container" class="space-y-4"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ========================================================= -->
+    <!-- OVERLAY LAYAR MERAH PELANGGARAN (PINDAH TAB / GAGAL)      -->
+    <!-- ========================================================= -->
+    <div id="cheat-overlay" class="fixed inset-0 z-50 hidden alarm-screen text-white flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-md w-full bg-red-950/90 border-2 border-red-300 rounded-3xl p-7 shadow-2xl">
+            <div class="w-20 h-20 mx-auto bg-red-600 rounded-full flex items-center justify-center mb-4 animate-bounce border-2 border-white">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <span class="bg-red-600 text-white text-xs font-extrabold uppercase tracking-widest px-3.5 py-1 rounded-full border border-red-300">
+                Peringatan Pelanggaran
+            </span>
+            <h2 class="text-3xl font-black mt-3 mb-2 tracking-tight">UJIAN GAGAL!</h2>
+            <p id="cheat-reason" class="text-red-100 text-sm sm:text-base mb-5 leading-relaxed">
+                Sistem mendeteksi Anda beralih tab baru atau keluar dari layar ujian saat kuis aktif. Sesuai aturan, kuis otomatis dibatalkan dan dinyatakan GAGAL!
+            </p>
+            <div class="bg-red-900/80 border border-red-400/40 rounded-xl p-3 mb-6 text-xs text-red-100">
+                Peserta: <strong id="cheat-student-info">-</strong> &bull; Status: <strong>DISKUALIFIKASI (Skor 0)</strong>
+            </div>
+            <button type="button" onclick="resetApplication()"
+                class="w-full bg-white text-red-700 hover:bg-red-50 font-black py-3.5 px-6 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer">
+                Reset & Ulangi dari Awal
+            </button>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+        Media Pembelajaran Bahasa Inggris SMP Kelas 9 &bull; Report Text Interactive Evaluation
+    </footer>
+
+    <!-- ========================================================= -->
+    <!-- JAVASCRIPT: SOAL HOTS, TIMER, ANTI-CHEAT & WEB AUDIO API  -->
+    <!-- ========================================================= -->
+    <script>
+        // 1. DATA 5 SOAL PG HOTS BERSTIMULUS (REPORT TEXT)
+        const quizQuestions = [
+            {
+                id: 1,
+                topic: "1. Identify & Understand Report Text (Fungsi Sosial & Perbedaan Teks)",
+                stimulusTitle: "Read the two text excerpts below carefully:",
+                stimulusText: `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+                    <div class="bg-white p-3 rounded-lg border border-slate-200">
+                        <strong class="text-blue-700 block mb-1">Text A:</strong>
+                        "Komodo dragons (<em>Varanus komodoensis</em>) are the largest living lizards on Earth. They inhabit dry, open grassland and savanna on several Indonesian islands."
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-slate-200">
+                        <strong class="text-amber-700 block mb-1">Text B:</strong>
+                        "Rango is my pet lizard at home. He is very tame and loves sleeping on a warm rock inside his glass terrarium every afternoon."
+                    </div>
+                </div>`,
+                question: "Based on the language features and social function, why is <strong>Text A</strong> classified as a <em>Report Text</em> while <strong>Text B</strong> is a <em>Descriptive Text</em>?",
+                options: [
+                    "A. Text A uses Past Tense to tell a historical story, while Text B uses Future Tense.",
+                    "B. Text A describes a species scientifically in general, whereas Text B describes a specific, individual pet.",
+                    "C. Text A aims to persuade readers to protect lizards, while Text B explains how to care for pets.",
+                    "D. Text A contains personal opinions of the writer, whereas Text B presents scientific facts."
+                ],
+                correctIndex: 1,
+                explanation: "Report Text (Text A) mendeskripsikan objek secara umum dan ilmiah (Komodo dragons sebagai spesies), sedangkan Descriptive Text (Text B) mendeskripsikan satu objek khusus/spesifik (Rango, peliharaan penulis)."
+            },
+            {
+                id: 2,
+                topic: "1. Identify & Understand Report Text (Struktur Teks & Informasi Tersirat)",
+                stimulusTitle: "Read the following Report Text excerpt:",
+                stimulusText: `<strong>Tsunamis</strong><br>
+                A tsunami is a series of extremely long waves caused by a large and sudden displacement of the ocean, usually the result of an earthquake below or near the ocean floor. This force creates waves that radiate outward in all directions away from their source, sometimes crossing entire ocean basins.<br><br>
+                Unlike wind-driven waves, which only travel through the topmost layer of the ocean, tsunamis move through the entire water column, from the ocean floor to the ocean surface. As a tsunami approaches shallow coastal waters, <strong>its</strong> speed decreases, but its height grows dramatically, causing severe flooding on land.`,
+                question: "What can be inferred from the second paragraph, and what does the bold word <em>\"its\"</em> in the last sentence refer to?",
+                options: [
+                    "A. Wind-driven waves are deeper than tsunamis; 'its' refers to shallow coastal waters.",
+                    "B. Tsunamis carry energy through the whole depth of the ocean and become taller near the shore; 'its' refers to a tsunami.",
+                    "C. Tsunamis travel faster when reaching shallow beaches; 'its' refers to the ocean floor.",
+                    "D. Earthquakes only occur on land; 'its' refers to severe flooding."
+                ],
+                correctIndex: 1,
+                explanation: "Paragraf kedua menjelaskan bahwa gelombang tsunami bergerak melalui seluruh kolom air laut dan tingginya meningkat drastis saat mendekati perairan pantai dangkal. Kata ganti 'its' merujuk pada 'a tsunami'."
+            },
+            {
+                id: 3,
+                topic: "2. Write Report Text (Menyusun Kalimat Acak Menjadi Paragraf Padu)",
+                stimulusTitle: "Examine the jumbled sentences for a Report Text about 'Coral Reefs':",
+                stimulusText: `<ol class="list-decimal list-inside space-y-1 text-xs sm:text-sm bg-white p-3 rounded-lg border border-slate-200">
+                    <li>These structures are secreted by tiny marine animals called coral polyps.</li>
+                    <li>Coral reefs are diverse underwater ecosystems held together by calcium carbonate structures.</li>
+                    <li>Consequently, they provide shelter and food for about 25 percent of all marine species.</li>
+                    <li>They mostly grow in warm, shallow, clear, and sunlit tropical waters.</li>
+                </ol>`,
+                question: "Which arrangement forms the most coherent and logical paragraph starting from <em>General Classification</em> to <em>Description</em>?",
+                options: [
+                    "A. 2 – 1 – 4 – 3",
+                    "B. 1 – 2 – 3 – 4",
+                    "C. 2 – 4 – 3 – 1",
+                    "D. 4 – 2 – 1 – 3"
+                ],
+                correctIndex: 0,
+                explanation: "Kalimat (2) adalah General Classification (definisi umum Coral reefs), diikuti (1) penjelasan struktur pembentuknya ('These structures'), (4) habitat tumbuhnya, dan (3) kesimpulan manfaat ekologisnya ('Consequently')."
+            },
+            {
+                id: 4,
+                topic: "2. Write Report Text (Menyunting Kalimat Sesuai Kaidah Objektif Report Text)",
+                stimulusTitle: "Read a student's draft of a Report Text below:",
+                stimulusText: `<strong>Bornean Orangutans</strong><br>
+                (1) Bornean orangutans are great apes native to the island of Borneo. (2) They have long, reddish-brown hair and strong arms for swinging through trees. (3) <em>I think they look super cute and funny when they eat bananas in the zoo!</em> (4) Currently, their population is threatened by deforestation and habitat loss.`,
+                question: "Sentence (3) is inappropriate for a formal <em>Report Text</em> because it is subjective. Which revision best replaces sentence (3) to maintain an objective, scientific tone?",
+                options: [
+                    "A. Everyone loves watching orangutans because they are very adorable animals.",
+                    "B. Last week, my family saw two orangutans eating fruits in the forest.",
+                    "C. Their diet consists mainly of wild fruits, leaves, bark, and insects found in the rainforest canopy.",
+                    "D. Please do not feed orangutans when you visit their conservation center."
+                ],
+                correctIndex: 2,
+                explanation: "Report text harus objektif, faktual, menggunakan Simple Present Tense, dan bebas dari opini pribadi ('I think... cute'). Pilihan C menyajikan fakta ilmiah tentang pola makan orangutan secara objektif."
+            },
+            {
+                id: 5,
+                topic: "1 & 2. Identify & Complete Report Text (Analisis Fakta & Passive Voice)",
+                stimulusTitle: "Analyze the Fact Table and incomplete Report Text below:",
+                stimulusText: `<div class="bg-white p-3 rounded-lg border border-slate-200 text-xs sm:text-sm space-y-2">
+                    <div class="bg-slate-100 p-2 rounded font-mono text-xs">
+                        <strong>Fact Sheet — Rafflesia arnoldii:</strong><br>
+                        • Status: Largest individual flower in the world | Habitat: Rainforests of Sumatra & Bengkulu<br>
+                        • Pollination: Emits strong odor of decaying flesh → attracts carrion flies
+                    </div>
+                    <p>
+                        <strong>Text Excerpt:</strong><br>
+                        <em>Rafflesia arnoldii</em> is famous for producing the largest individual flower on Earth. It grows in the rainforests of Sumatra. Because this parasitic plant has no leaves or roots, nutrients (1) ______ directly from its host vine. When it blooms, carrion flies (2) ______ by its strong odor to help pollination.
+                    </p>
+                </div>`,
+                question: "Which pair of verbs accurately completes blanks (1) and (2) using proper grammatical agreement in Simple Present Passive?",
+                options: [
+                    "A. (1) is absorbed — (2) is attracted",
+                    "B. (1) are absorbed — (2) are attracted",
+                    "C. (1) absorbed — (2) attracting",
+                    "D. (1) was absorbed — (2) were attracted"
+                ],
+                correctIndex: 1,
+                explanation: "Subjek (1) 'nutrients' (jamak) dan subjek (2) 'carrion flies' (jamak) keduanya membutuhkan bentuk Simple Present Passive jamak: 'are absorbed' dan 'are attracted'."
+            }
+        ];
+
+        // 2. VARIABEL STATE APLIKASI
+        let studentName = "";
+        let studentClass = "";
+        let isQuizActive = false;
+        let timeRemaining = 20 * 60; // 20 menit = 1200 detik
+        let timerInterval = null;
+        let alarmInterval = null;
+        let audioCtx = null;
+
+        // 3. GENERATOR AUDIO MANDIRI (WEB AUDIO API - TANPA MP3 EKSTERNAL)
+        function initAudioContext() {
+            try {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new AudioContextClass();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch (e) {
+                console.warn("Web Audio API tidak tersedia:", e);
+            }
+        }
+
+        // Bunyi Alarm Sirene Keras saat Pindah Tab / Keluar Layar
+        function startAlarmSound() {
+            try {
+                initAudioContext();
+                stopAlarmSound();
+
+                let togglePitch = true;
+                const triggerSireneTone = () => {
+                    if (!audioCtx) return;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(togglePitch ? 920 : 640, audioCtx.currentTime);
+                    togglePitch = !togglePitch;
+
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.34);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.35);
+                };
+
+                triggerSireneTone();
+                alarmInterval = setInterval(triggerSireneTone, 380);
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+
+        function stopAlarmSound() {
+            if (alarmInterval) {
+                clearInterval(alarmInterval);
+                alarmInterval = null;
+            }
+        }
+
+        // Bunyi Fanfare Kemenangan (Skor > 80)
+        function playVictorySound() {
+            try {
+                initAudioContext();
+                const melody = [523.25, 659.25, 783.99, 1046.50]; // C5 - E5 - G5 - C6
+                melody.forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.14);
+
+                    gain.gain.setValueAtTime(0.28, audioCtx.currentTime + i * 0.14);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.14 + 0.45);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(audioCtx.currentTime + i * 0.14);
+                    osc.stop(audioCtx.currentTime + i * 0.14 + 0.46);
+                });
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+
+        // Bunyi Nada Penyemangat (Skor <= 80)
+        function playEncourageSound() {
+            try {
+                initAudioContext();
+                const melody = [440, 493.88, 523.25]; // A4 - B4 - C5
+                melody.forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.18);
+
+                    gain.gain.setValueAtTime(0.22, audioCtx.currentTime + i * 0.18);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.18 + 0.4);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(audioCtx.currentTime + i * 0.18);
+                    osc.stop(audioCtx.currentTime + i * 0.18 + 0.42);
+                });
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+
+        // 4. PESAN NOTIFIKASI TOAST (PENGGANTI ALERT)
+        function showToast(message) {
+            const box = document.getElementById('toast-box');
+            document.getElementById('toast-message').textContent = message;
+            box.classList.remove('hidden');
+            setTimeout(() => {
+                box.classList.add('hidden');
+            }, 3500);
+        }
+
+        // 5. VALIDASI IDENTITAS & AKTIVASI SISTEM KUIS
+        document.getElementById('start-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const nameVal = document.getElementById('student-name').value.trim();
+            const classVal = document.getElementById('student-class').value.trim();
+
+            if (!nameVal || !classVal) {
+                showToast("Harap isi Nama Lengkap dan Kelas terlebih dahulu!");
+                return;
+            }
+
+            studentName = nameVal;
+            studentClass = classVal;
+
+            // Buka izin Web Audio API melalui klik user
+            initAudioContext();
+
+            // Set Info Identitas di Header & Banner Kuis
+            document.getElementById('header-student-name').textContent = studentName;
+            document.getElementById('header-student-class').textContent = `Kelas: ${studentClass}`;
+            document.getElementById('display-name').textContent = studentName;
+            document.getElementById('display-class').textContent = studentClass;
+            document.getElementById('avatar-initials').textContent = studentName.charAt(0).toUpperCase();
+
+            // Render 5 Soal HOTS
+            renderQuestions();
+
+            // Ubah Tampilan Halaman
+            document.getElementById('intro-section').classList.add('hidden');
+            document.getElementById('result-section').classList.add('hidden');
+            document.getElementById('quiz-section').classList.remove('hidden');
+            document.getElementById('active-exam-bar').classList.remove('hidden');
+            document.getElementById('active-exam-bar').classList.add('flex');
+
+            // Aktifkan Mode Ujian & Timer 20 Menit
+            isQuizActive = true;
+            startCountdownTimer();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // 6. RENDER 5 SOAL HOTS BERSTIMULUS
+        function renderQuestions() {
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+
+            quizQuestions.forEach((q, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-7 transition hover:border-blue-300";
+
+                let optionsMarkup = '';
+                q.options.forEach((opt, optIndex) => {
+                    optionsMarkup += `
+                        <label class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-blue-50/60 hover:border-blue-300 transition has-[:checked]:bg-blue-50 has-[:checked]:border-blue-600 has-[:checked]:ring-1 has-[:checked]:ring-blue-600">
+                            <input type="radio" name="question_${q.id}" value="${optIndex}" class="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300">
+                            <span class="text-sm sm:text-base text-slate-800 leading-snug">${opt}</span>
+                        </label>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <span class="bg-blue-700 text-white text-xs font-extrabold px-3 py-1 rounded-lg">SOAL ${index + 1} DARI 5 &bull; HOTS</span>
+                        <span class="text-xs font-semibold text-slate-500">${q.topic}</span>
+                    </div>
+
+                    <!-- Stimulus Soal -->
+                    <div class="bg-amber-50/70 border-l-4 border-amber-500 rounded-r-xl p-4 mb-4">
+                        <p class="text-xs font-extrabold uppercase tracking-wider text-amber-800 mb-2">${q.stimulusTitle}</p>
+                        <div class="text-sm text-slate-800 leading-relaxed">${q.stimulusText}</div>
+                    </div>
+
+                    <!-- Pertanyaan -->
+                    <p class="text-base font-bold text-slate-900 mb-4 leading-relaxed">${q.question}</p>
+
+                    <!-- Opsi Pilihan Ganda -->
+                    <div class="space-y-2.5">
+                        ${optionsMarkup}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 7. TIMER HITUNG MUNDUR 20 MENIT (OTOMATIS SUBMIT SAAT HABIS)
+        function startCountdownTimer() {
+            timeRemaining = 20 * 60; // 20 menit
+            updateTimerDisplay();
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!isQuizActive) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+
+                timeRemaining--;
+                updateTimerDisplay();
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    autoSubmitOnTimeout();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timeRemaining / 60);
+            const secs = timeRemaining % 60;
+            document.getElementById('timer-display').textContent =
+                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function autoSubmitOnTimeout() {
+            isQuizActive = false;
+            showToast("Waktu 20 menit telah habis! Jawaban dikumpulkan otomatis.");
+
+            let correctCount = 0;
+            const userAnswers = [];
+            quizQuestions.forEach((q) => {
+                const selected = document.querySelector(`input[name="question_${q.id}"]:checked`);
+                const val = selected ? parseInt(selected.value, 10) : null;
+                userAnswers.push(val);
+                if (val === q.correctIndex) correctCount++;
+            });
+
+            showResultPage(correctCount * 20, correctCount, userAnswers);
+        }
+
+        // 8. DETEKSI PINDAH TAB / KELUAR LAYAR (ANTI-CHEAT)
+        function handleTabSwitchViolation() {
+            if (!isQuizActive) return;
+
+            isQuizActive = false;
+            if (timerInterval) clearInterval(timerInterval);
+
+            // Bunyikan Alarm Keras
+            startAlarmSound();
+
+            // Tampilkan Layar Merah Gagal
+            document.getElementById('cheat-student-info').textContent = `${studentName} (${studentClass})`;
+            document.getElementById('cheat-overlay').classList.remove('hidden');
+        }
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden && isQuizActive) {
+                handleTabSwitchViolation();
+            }
+        });
+
+        window.addEventListener('blur', function () {
+            if (isQuizActive) {
+                handleTabSwitchViolation();
+            }
+        });
+
+        // 9. SUBMIT MANUAL OLEH SISWA
+        document.getElementById('submit-quiz-btn').addEventListener('click', function () {
+            let unanswered = 0;
+            const userAnswers = [];
+
+            quizQuestions.forEach((q) => {
+                const selected = document.querySelector(`input[name="question_${q.id}"]:checked`);
+                if (!selected) {
+                    unanswered++;
+                    userAnswers.push(null);
+                } else {
+                    userAnswers.push(parseInt(selected.value, 10));
+                }
+            });
+
+            if (unanswered > 0) {
+                showToast(`Masih ada ${unanswered} soal yang belum diisi. Lengkapi semua soal terlebih dahulu!`);
+                return;
+            }
+
+            // Matikan mode ujian & pengawas anti-cheat
+            isQuizActive = false;
+            if (timerInterval) clearInterval(timerInterval);
+
+            let correctCount = 0;
+            quizQuestions.forEach((q, idx) => {
+                if (userAnswers[idx] === q.correctIndex) {
+                    correctCount++;
+                }
+            });
+
+            showResultPage(correctCount * 20, correctCount, userAnswers);
+        });
+
+        // 10. HALAMAN HASIL & KARAKTER ANIMASI SVG
+        function showResultPage(score, correctCount, userAnswers) {
+            document.getElementById('quiz-section').classList.add('hidden');
+            document.getElementById('active-exam-bar').classList.add('hidden');
+            document.getElementById('active-exam-bar').classList.remove('flex');
+            document.getElementById('result-section').classList.remove('hidden');
+
+            document.getElementById('res-name').textContent = studentName;
+            document.getElementById('res-class').textContent = studentClass;
+            document.getElementById('res-score').textContent = score;
+            document.getElementById('res-detail').textContent = `Menjawab benar ${correctCount} dari ${quizQuestions.length} soal HOTS`;
+
+            const animBox = document.getElementById('result-animation-box');
+            const badge = document.getElementById('result-badge');
+            const title = document.getElementById('result-title');
+            const msg = document.getElementById('result-message');
+            const scoreEl = document.getElementById('res-score');
+
+            if (score > 80) {
+                // SKOR DI ATAS 80 -> SELAMAT DAN MANTAP + ANIMASI PIALA + KONFETI
+                badge.className = "inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wider mb-3 bg-emerald-100 text-emerald-800";
+                badge.textContent = "Lulus Dengan Predikat Sangat Baik!";
+                title.className = "text-2xl sm:text-4xl font-black mb-2 text-emerald-600";
+                title.textContent = "SELAMAT DAN MANTAP! 🎉";
+                scoreEl.className = "text-5xl sm:text-6xl font-black text-emerald-600";
+                msg.textContent = "Luar biasa! Kamu berhasil memahami konsep Report Text, struktur General Classification & Description, serta kaidah penulisan ilmiah dengan sangat tepat!";
+
+                animBox.innerHTML = `
+                    <svg class="w-44 h-44 animate-trophy" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="100" cy="100" r="90" fill="#D1FAE5"/>
+                        <circle cx="100" cy="100" r="72" fill="#A7F3D0"/>
+                        <!-- Bintang Perayaan -->
+                        <path d="M38 48L41 56L49 59L41 62L38 70L35 62L27 59L35 56L38 48Z" fill="#F59E0B"/>
+                        <path d="M162 44L165 52L173 55L165 58L162 66L159 58L151 55L159 52L162 44Z" fill="#F59E0B"/>
+                        <!-- Karakter Gembira -->
+                        <circle cx="100" cy="118" r="36" fill="#FBBF24"/>
+                        <path d="M84 111C86 106 92 106 94 111" stroke="#0F172A" stroke-width="4" stroke-linecap="round"/>
+                        <path d="M106 111C108 106 114 106 116 111" stroke="#0F172A" stroke-width="4" stroke-linecap="round"/>
+                        <circle cx="80" cy="121" r="5" fill="#F87171" opacity="0.65"/>
+                        <circle cx="120" cy="121" r="5" fill="#F87171" opacity="0.65"/>
+                        <path d="M86 125C90 137 110 137 114 125Z" fill="#DC2626"/>
+                        <!-- Piala Emas -->
+                        <path d="M81 40H119V57C119 67 110 75 100 75C90 75 81 67 81 57V40Z" fill="#F59E0B" stroke="#B45309" stroke-width="3"/>
+                        <rect x="95" y="75" width="10" height="10" fill="#B45309"/>
+                        <rect x="85" y="84" width="30" height="6" rx="3" fill="#78350F"/>
+                        <!-- Tangan Melambai Gembira -->
+                        <path d="M62 118C50 102 48 86 56 79" stroke="#F59E0B" stroke-width="8" stroke-linecap="round" class="animate-wave"/>
+                        <path d="M138 118C150 102 152 86 144 79" stroke="#F59E0B" stroke-width="8" stroke-linecap="round"/>
+                    </svg>
+                `;
+
+                playVictorySound();
+                launchConfetti();
+            } else {
+                // SKOR DI BAWAH ATAU SAMA DENGAN 80 -> YUKK SEMANGAT DAN COBA LAGI!
+                badge.className = "inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wider mb-3 bg-amber-100 text-amber-800";
+                badge.textContent = "Jangan Menyerah, Terus Berlatih!";
+                title.className = "text-2xl sm:text-4xl font-black mb-2 text-amber-600";
+                title.textContent = "YUKK SEMANGAT DAN COBA LAGI! 💪";
+                scoreEl.className = "text-5xl sm:text-6xl font-black text-amber-600";
+                msg.textContent = "Tetap semangat! Pelajari kembali perbedaan Report vs Descriptive text, urutan paragraf, serta pembahasan soal di bawah ini, lalu coba lagi untuk mencapai skor di atas 80!";
+
+                animBox.innerHTML = `
+                    <svg class="w-44 h-44 animate-bounce-slow" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="100" cy="100" r="90" fill="#FEF3C7"/>
+                        <circle cx="100" cy="100" r="72" fill="#FDE68A"/>
+                        <!-- Karakter Penyemangat -->
+                        <circle cx="100" cy="110" r="38" fill="#3B82F6"/>
+                        <!-- Topi Semangat -->
+                        <path d="M65 92C72 68 128 68 135 92H65Z" fill="#1D4ED8"/>
+                        <rect x="60" y="90" width="80" height="7" rx="3.5" fill="#1E3A8A"/>
+                        <!-- Mata Berbinar -->
+                        <circle cx="87" cy="108" r="4.5" fill="#0F172A"/>
+                        <circle cx="113" cy="108" r="4.5" fill="#0F172A"/>
+                        <circle cx="88.5" cy="106.5" r="1.5" fill="white"/>
+                        <circle cx="114.5" cy="106.5" r="1.5" fill="white"/>
+                        <!-- Senyum Ramah -->
+                        <path d="M87 122C93 130 107 130 113 122" stroke="#0F172A" stroke-width="4" stroke-linecap="round"/>
+                        <!-- Tangan Mengepal Semangat -->
+                        <path d="M138 118C152 110 158 96 152 84" stroke="#2563EB" stroke-width="9" stroke-linecap="round" class="animate-wave"/>
+                        <circle cx="152" cy="82" r="8" fill="#FBBF24"/>
+                        <!-- Api Semangat & Hati -->
+                        <path d="M52 86C44 76 48 62 56 56C55 64 60 66 62 60C68 68 66 80 58 86H52Z" fill="#F97316" class="animate-flame"/>
+                        <path d="M148 56C148 50 155 48 157 54C159 48 166 50 166 56C166 62 157 69 157 69C157 69 148 62 148 56Z" fill="#EF4444"/>
+                    </svg>
+                `;
+
+                playEncourageSound();
+            }
+
+            renderReview(userAnswers);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderReview(userAnswers) {
+            const container = document.getElementById('review-container');
+            container.innerHTML = '';
+
+            quizQuestions.forEach((q, idx) => {
+                const userVal = userAnswers[idx];
+                const isCorrect = userVal === q.correctIndex;
+                const userText = userVal !== null ? q.options[userVal] : "Tidak dijawab (Waktu habis)";
+
+                const item = document.createElement('div');
+                item.className = `p-4 rounded-xl border ${isCorrect ? 'bg-emerald-50/60 border-emerald-200' : 'bg-rose-50/60 border-rose-200'}`;
+
+                item.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span class="text-xs font-extrabold ${isCorrect ? 'text-emerald-700' : 'text-rose-700'}">
+                            Soal ${idx + 1}: ${isCorrect ? 'BENAR (+20 Poin)' : 'KURANG TEPAT (0 Poin)'}
+                        </span>
+                    </div>
+                    <p class="text-xs sm:text-sm font-bold text-slate-800 mb-2">${q.question}</p>
+                    <p class="text-xs text-slate-600 mb-1">Jawaban Anda: <strong class="${isCorrect ? 'text-emerald-700' : 'text-rose-700'}">${userText}</strong></p>
+                    ${!isCorrect ? `<p class="text-xs text-emerald-800 mb-1">Kunci Jawaban: <strong>${q.options[q.correctIndex]}</strong></p>` : ''}
+                    <p class="text-xs text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200 mt-2">
+                        <strong>Pembahasan:</strong> ${q.explanation}
+                    </p>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // 11. RESET APLIKASI
+        function resetApplication() {
+            stopAlarmSound();
+            isQuizActive = false;
+            if (timerInterval) clearInterval(timerInterval);
+
+            document.getElementById('cheat-overlay').classList.add('hidden');
+            document.getElementById('result-section').classList.add('hidden');
+            document.getElementById('quiz-section').classList.add('hidden');
+            document.getElementById('active-exam-bar').classList.add('hidden');
+            document.getElementById('active-exam-bar').classList.remove('flex');
+            document.getElementById('intro-section').classList.remove('hidden');
+
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 12. EFEK KONFETI KEMENANGAN
+        function launchConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const colors = ['#10b981', '#2563eb', '#f59e0b', '#ec4899', '#8b5cf6'];
+            const pieces = Array.from({ length: 130 }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                size: Math.random() * 8 + 5,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speedY: Math.random() * 3.5 + 2,
+                speedX: Math.random() * 2 - 1,
+                rotation: Math.random() * 360
+            }));
+
+            let frame = 0;
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                pieces.forEach(p => {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    p.rotation += 4;
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate((p.rotation * Math.PI) / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                    ctx.restore();
+                });
+
+                frame++;
+                if (frame < 240) {
+                    requestAnimationFrame(animate);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+            animate();
+        }
+    </script>
+</body>
+</html>
